@@ -236,6 +236,89 @@ end</code></pre>
               * it was used in ruby, rails and sinatra projects
           </aside>
         </section>
+
+        <section>
+          <h3>Deep dependencies</h3>
+          <pre><code class="ruby">class BetsController < ApplicationController
+  def create
+    BetPlacement.place!(current_user, bet_slip, channel)
+  end
+end
+ 
+class BetPlacement
+  def self.place!(current_user, bet_slip, channel)
+    bonus = BonusCalculator.calculate(current_user, bet_slip)
+    BetsCreator.create!(current_user, bet_slip, channel, bonus)
+  end
+end
+ 
+class BetsCreator
+  def self.place!(user, bet_slip, channel, bonus); end
+end</code></pre>
+          <aside class="notes" data-markdown>
+            First domain
+              
+               * bookmaking platform
+               * it is a place where I wish I used DI
+               
+            Pros
+            
+              * easy to follow
+            
+            Cons
+            
+              * coupling to order of arguments
+              * services aware of unrelated arguments
+          </aside>
+        </section>
+        
+        <section>
+          <h3>Wishful thinking</h3>
+          <pre><code class="ruby">class BetPlacement
+  takes :bonus_calculator
+  
+  def place!
+    bonus = bonus_calculator.calculate
+    bets_creator.create!(bonus)
+  end
+end
+ 
+class BetsCreator
+  takes :current_user, :bet_slip, :channel
+  
+  def place!(bonus); end
+end</code></pre>
+          <aside class="notes" data-markdown>
+            Pros
+            
+              * concerned with only real dependencies
+              * wishful thinking is a nice design technique, a top down approach
+              * possible?
+          </aside>
+        </section>
+        
+        <section>
+          <h3>is not a fallacy</h3>
+          <pre><code class="ruby">class BetsController < ApplicationController
+  def create
+    Injector.new(channel, params).bet_placement.place!
+  end
+end
+ 
+def Injector
+  include Dependor::AutoInject
+  takes :channel, :params
+  
+  def bet_slip; end
+  def current_user; end
+end</code></pre>
+          <aside class="notes" data-markdown>
+            Pros
+            
+              * irrevalant arguments are not passed in
+              * injector can be scoped to just ona action
+          </aside>
+        </section>
         
         <section>
           <h3>Runner</h3>
@@ -257,9 +340,8 @@ end
 
 Injector.new(ARGV[0]).runner.run</code></pre>
           <aside class="notes" data-markdown>
-            First domain
-              
-               * bookmaking system
+            BetDash
+
                * we've rewritten data import processes
                * feature switches were used the keep the old code in place during transition
                
@@ -298,10 +380,6 @@ end</code></pre>
               * monkey patch - I avoid as much as I can
               * constant replacemnet - changes in whole process, injector only within a scope of one injection
           </aside>
-        </section>
-        
-        <section>
-          <h3>Transaction Injection</h3>
         </section>
         
         <section>
@@ -354,11 +432,46 @@ end</code></pre>
         </section>
 
         <section>
-          <h2>Current user</h2>
+          <h2>Sinatra</h2>
+<pre><code class="ruby">post "/orders" do |order_creator|
+  order_creator.create
+end
+ 
+class OrderCreator
+  takes :current_user, :params, :order_db
+  
+  def create
+    current_user.orders << order_db.new(params[:order])
+  end
+end</code></pre>
+          <aside class="notes" data-markdown>
+            Sinatra integration
+            
+              * nice syntax, seamless integration
+              * it was used in to simple project, it was just an overhead
+          </aside>
         </section>
-                
+        
         <section>
-          <h2>Dependor as Builder</h2>
+          <h2>Some thoughts</h2>
+          <ul>
+            <li class="fragment">shines with at least few collaborators</li>
+            <li class="fragment">when components need to be replaced</li>
+            <li class="fragment">works nicely for ruby apps</li>
+            <li class="fragment">think about entry points</li>
+          </ul>   
+          <aside class="notes" data-markdown>
+            Pros
+            
+              * collaborators, object graphs
+              * when components need to be replaced
+              * works well for ruby apps, gems
+              * always think about entry point, big rails apps, may still have simple entry points
+              * can be used in some areas
+              * fightint rails mindset - angular.js vs ember.js
+              * tight coupling vs dependency injection
+              * Ruby tight coupling is not as tigh as in Java/C#
+          </aside>
         </section>
                 
         <section>
