@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+
+    <title>Hollywood Principle</title>
+
+    <meta name="description" content="A framework for easily creating beautiful presentations using HTML">
+    <meta name="author" content="Hakim El Hattab">
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <link rel="stylesheet" href="css/reveal.min.css">
+    <link rel="stylesheet" href="css/theme/default.css" id="theme">
+
+    <!-- For syntax highlighting -->
+    <link rel="stylesheet" href="lib/css/tomorrow-night.css">
+
+    <!-- If the query includes 'print-pdf', use the PDF print sheet -->
+    <script>
+      document.write( '<link rel="stylesheet" href="css/print/' + ( window.location.search.match( /print-pdf/gi ) ? 'pdf' : 'paper' ) + '.css" type="text/css" media="print">' );
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="lib/js/html5shiv.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+
+    <div class="reveal">
+
+      <!-- Any section element inside of this container is displayed as a slide -->
+      <div class="slides">
+
+        <section>
+          <h1>Hollywood Principle</h1>
+          <p>
+            <small><a href="http://twitter.com/zwrozka">@zwrozka</a></small>
+          </p>
+          
+          <p>
+            <small><a href="http://www.meetup.com/Krakow-Ruby-Users-Group/events/109844542/">KRUG</a> 09.04.2013</small>
+          </p>
+          <aside class="notes" data-markdown>
+            Introduction
+            
+              * hello
+              * 20 - 30 minutes warning
+              * questions to overcome stage fright
+              * the talk, an example before definitions introduction
+          </aside>
+        </section>
+        
+        <section>
+        <h3>A mess</h3>
+<pre><code class="ruby">class Job
+ def run
+   @retriever = FtpFileRetriever.new
+   strm = @retriever.get_file('theirs')
+  
+   @cleaner = FileCleaner.new
+   cleaned = @cleaner.clean(strm)
+  
+   local = 'mine'
+   File.open(local, 'w') {|f| f.write(cleaned) }
+   local
+ end
+end</code></pre>
+          <aside class="notes" data-markdown>
+            First example - no DI
+            
+              * data import
+              * retrives data via FTP, sanitizes and stores it
+              * generic piece of code? Changing requirements, tight coupling
+          </aside>
+        </section>
+
+        <section>
+        <h3>An injection</h3>
+<pre><code class="ruby">class Job
+ attr_reader :retriever, :cleaner
+
+ def initialize(retriever, cleaner)
+   @retriever = retriever
+   @cleaner = cleaner
+ end
+
+ def run(remote, local)
+   strm = retriever.get_file(remote)
+   cleaned = cleaner.clean(strm)
+  
+   File.open(local, 'w') {|f| f.write(cleaned) }
+   local
+ end
+end</code></pre>
+          <aside class="notes" data-markdown>
+            DI introduced
+            
+              * replacable components
+              * created dependencies need to be injected
+          </aside>
+        </section>
+        
+        <section>
+          <section>
+            <h2>Hollywood Principle</h2>
+            <blockquote>
+              Don't call us, we'll call you
+            </blockquote>
+            <aside class="notes" data-markdown>
+              What it is about?
+              
+                * it means the code doesn't creates its collaboraters, they are past to it
+                * it is about how the code is being used -> Inversion of Control
+            </aside>
+          </section>
+          
+          <section>
+            <h2>Inversion of control</h2>
+            <p>Control over what?</p>
+            <aside class="notes" data-markdown>
+              Two sides
+              
+                * inversion of execution control, command line vs ui programming
+                * control over dependencies instatnization is inverted - they are looked up rather than created
+                * the part about dealing with collaborators is called dependency injection
+            </aside>
+          </section>
+          
+          <section>
+            <h2>Dependency Inversion</h2>
+            <blockquote>
+              Abstractions should not depend upon details. Details should depend upon abstractions
+            </blockquote>
+            
+            <aside class="notes" data-markdown>
+              What those fancy words mean?
+              
+                * again, that you shouldn't create collaborators by hand
+                * staticlly typed languages, programing agains Interfaces
+                * due to Ruby duck typing, programing agains anything that is not a concrete class
+             </aside>
+          </section>
+        </section>
+        
+        <section>
+          <h3>Manual Dependency Injection</h3>
+<pre><code class="ruby">class Injector
+  def ftp_job
+    Job.new(FtpFileRetriever.new, FileCleaner.new)
+  end
+ 
+  def http_job
+    Job.new(HttpFileRetriever.new, FileCleaner.new)
+  end
+end</code></pre>
+          <aside class="notes" data-markdown>
+            Better, but
+            
+              * a lot of repetition
+              * gets more painful, when classes have more dependencies
+              * however, gives the benefits of DI
+              * can be simplified with a little bit of meta programming
+           </aside>
+        </section>
+
+        <section>
+        <h3>Automated Dependency Injection</h3>
+<pre><code class="ruby">class Injector
+  include Dependor::AutoInject
+
+  def ftp_job
+    inject(Job, file_retriver: FtpFileRetriever.new)
+  end
+ 
+  def http_job
+    inject(Job, file_retriver: HttpFileRetriever.new)
+  end
+end</code></pre>
+          <aside class="notes" data-markdown>
+            Automated
+
+              * automated manul depdency injection 
+              * convention over configuration              
+              * only the difference needs to be specified
+              * dependencies are read from constructor signature
+           </aside>
+        </section>
+        
+        <section>
+        <h3>Takes</h3>
+<pre><code class="ruby">class Job
+  attr_reader :retriever, :cleaner
+
+  def initialize(retriever, cleaner)
+    @retriever = retriever
+    @cleaner   = cleaner
+  end
+end
+</code></pre>
+<pre class="fragment"><code class="ruby">class Job
+  takes :retriever, :cleaner
+end</code></pre>
+          <aside class="notes" data-markdown>
+            A little lengthy constructor
+
+              * the constructor signature defined dependencies            
+              * still, the body and attr_readerers needs to be defined
+              * there is a lot of ceremony in that
+              * I dont like writing boilerplate, I'm not a java programmer in the end ;)
+              * takes to the rescue, does the same that code above
+           </aside>
+        </section>
+
+        <section>
+          <h1>Dependor</h1>
+          <ul>
+            <li class="fragment">dependency injection</li>
+            <li class="fragment">convention over configuration</li>
+            <li class="fragment">constructor based injection</li>
+            <li class="fragment">tried and tested</li>
+          </ul>            
+          
+          <aside class="notes" data-markdown>
+            Previous slides shown how dependor works, a quick recap
+            
+              * it is dependency injection, not a service locator
+              * convention over configuration removes a lot of boilerplate, there are no XML files
+              * constructor based injection ensures, that only valid objects are creates
+              * constructor based injection, clearly shows all the dependencis of an object
+              * it was used in ruby, rails and sinatra projects
+          </aside>
+        </section>
+        
+        <section>
+          <h3>Runner</h3>
+          <pre><code class="ruby">class Runner
+  takes :feature, :exception_notifier, :alive_marker #, ...
+  def run
+    return unless feature.enabled? # otherwise start importing
+  end
+end
+
+class Injector
+  include Dependor::AutoInject
+  takes :import_type
+  def feature
+    return AlwaysEnabled unless [:horse_import].include?(import_type)
+    inject(FeatureSwitch)
+  end
+end
+
+Injector.new(ARGV[0]).runner.run</code></pre>
+          <aside class="notes" data-markdown>
+            First domain
+              
+               * bookmaking system
+               * we've rewritten data import processes
+               * feature switches were used the keep the old code in place during transition
+               
+            Pros
+            
+              * code configuration is moved to injector
+              * it is transparent to the domain code
+          </aside>
+        </section>
+        
+        <section>
+          <h3>Exception Notifier</h3>
+          <pre><code class="ruby">class ExceptionNotifier; end
+class FakeExceptioNotifier; end
+
+class Injector
+  include Dependor::AutoInject
+  takes :configuration
+  
+  def exception_notifier
+    configuration.exception_notifier || ExceptionNotifier
+  end
+end
+
+EventImport.configure do |c|
+  c.exception_notifier = FakeExceptionNotifier
+end</code></pre>
+          <aside class="notes" data-markdown>
+            Pros
+            
+              * you can use external configuration to modify the graph without tuching the production code at all
+              * especiall useful for debugging purposes and tests
+              
+            Other approaches
+            
+              * monkey patch - I avoid as much as I can
+              * constant replacemnet - changes in whole process, injector only within a scope of one injection
+          </aside>
+        </section>
+        
+        <section>
+          <h3>Transaction Injection</h3>
+        </section>
+        
+        <section>
+          <h3>Per environment injection</h3>
+          <pre><code class="ruby">#development.rb, test.rb
+FileUploader = LocalFileUploader.new
+
+Rails::Application.configure do
+end</code></pre>
+
+<pre><code class="ruby">#production.rb
+FileUploader = S3FileUploader.new
+
+Rails::Application.configure do
+end</code></pre>
+          <aside class="notes" data-markdown>
+            Pros
+            
+              * if per env model fits, there is no need for big DI solution
+          </aside>
+        </section>
+        
+        <section>
+          <h3>Per server injection</h3>
+<pre><code class="ruby">class Injector
+  include Dependor::AutoInject
+  
+  def press_downloader
+    if Environment.live?
+      SFTPDownloader.new(#SFTP configuration)
+    elsif Environment.local?
+      LocalDownloader.new(#local path)
+    elsif Environment.primary_staging?
+      # ...
+    elsif Environment.seconary_staging?
+      # ...
+    else
+      raise UnsupportedEnvironemnt
+    end
+  end
+end</code></pre>
+
+          <aside class="notes" data-markdown>
+            Pros
+            
+              * infrastructure specific logic can be placed in injector or external class
+              * both can be easily tested
+              * domain code doesn't care about the server configuration specifics
+          </aside>
+        </section>
+
+        <section>
+          <h2>Current user</h2>
+        </section>
+                
+        <section>
+          <h2>Dependor as Builder</h2>
+        </section>
+                
+        <section>
+          <h2>It is not about testing</h2>
+          <aside class="notes" data-markdown>
+            Testing
+            
+              * This is a talk about dependency injection, so I'm obliged by the law to mention testing. It is super easy to test code written with DI in mind in isolation. 
+              * However in Ruby it is easy to stub on anything, so this point is not so valid in our language.I would still say that tests without stubbing on new nor constants are more readable and easier to maintain.
+          </aside>
+        </section>
+
+        <section>
+          <h2>A bunch of links</h2>
+          <ul>
+            <li><a href="https://github.com/psyho/dependor">Dependor source code</a></li>
+            <li><a href="https://github.com/psyho/dependor-sinatra">Sinatra intrgration</a></li>
+            <li><a href="http://twitter.com/zwrozka">@zwrozka</a></li>
+          </ul>
+          
+          <aside class="notes" data-markdown>
+            Almost done
+            
+              * give it a try
+              * I would love to help, if anyone has problems with the library or their domain
+              * new ideas are welcome
+              * twitter handle, follow me ;)
+          </aside>
+        </section>
+
+        <section>
+          <h1>THE END</h1>
+          <h3>BY Pawel Pierzchala</h3>
+          
+          <aside class="notes" data-markdown>
+            Thank you. Any questions?
+          </aside>
+        </section>
+      </div>
+    </div>
+
+    <script src="lib/js/head.min.js"></script>
+    <script src="js/reveal.min.js"></script>
+
+    <script>
+
+      // Full list of configuration options available here:
+      // https://github.com/hakimel/reveal.js#configuration
+      Reveal.initialize({
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+
+        theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+        transition: Reveal.getQueryHash().transition || 'default', // default/cube/page/concave/zoom/linear/fade/none
+
+        // Optional libraries used to extend on reveal.js
+        dependencies: [
+          { src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+          { src: 'plugin/markdown/showdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+          { src: 'plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+          { src: 'plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } },
+          { src: 'socket.io/socket.io.js', async: true }
+          // { src: 'plugin/search/search.js', async: true, condition: function() { return !!document.body.classList; } }
+          // { src: 'plugin/remotes/remotes.js', async: true, condition: function() { return !!document.body.classList; } }
+        ]
+      });
+
+    </script>
+
+  </body>
+</html>
