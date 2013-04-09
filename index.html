@@ -42,30 +42,30 @@
           <p>
             <small><a href="http://twitter.com/zwrozka">@zwrozka</a></small>
           </p>
-          
+
           <p>
             <small><a href="http://www.meetup.com/Krakow-Ruby-Users-Group/events/109844542/">KRUG</a> 09.04.2013</small>
           </p>
           <aside class="notes" data-markdown>
             Introduction
-            
+
               * hello
               * 20 - 30 minutes warning
-              * questions to overcome stage fright
+              * don't hesitate with questions, lot of examples -> ask if any clarifications are needed
               * the talk, an example before definitions introduction
           </aside>
         </section>
-        
+
         <section>
         <h3>A mess</h3>
 <pre><code class="ruby">class Job
  def run
    @retriever = FtpFileRetriever.new
    strm = @retriever.get_file('theirs')
-  
+
    @cleaner = FileCleaner.new
    cleaned = @cleaner.clean(strm)
-  
+
    local = 'mine'
    File.open(local, 'w') {|f| f.write(cleaned) }
    local
@@ -73,7 +73,7 @@
 end</code></pre>
           <aside class="notes" data-markdown>
             First example - no DI
-            
+
               * data import
               * retrives data via FTP, sanitizes and stores it
               * generic piece of code? Changing requirements, tight coupling
@@ -93,19 +93,19 @@ end</code></pre>
  def run(remote, local)
    strm = retriever.get_file(remote)
    cleaned = cleaner.clean(strm)
-  
+
    File.open(local, 'w') {|f| f.write(cleaned) }
    local
  end
 end</code></pre>
           <aside class="notes" data-markdown>
             DI introduced
-            
-              * replacable components
+
+              * replaceable components
               * created dependencies need to be injected
           </aside>
         </section>
-        
+
         <section>
           <section>
             <h2>Hollywood Principle</h2>
@@ -114,54 +114,56 @@ end</code></pre>
             </blockquote>
             <aside class="notes" data-markdown>
               What it is about?
-              
-                * it means the code doesn't creates its collaboraters, they are past to it
+
+                * it means the code doesn't creates its collaborators, they are past to it
                 * it is about how the code is being used -> Inversion of Control
             </aside>
           </section>
-          
+
           <section>
             <h2>Inversion of control</h2>
             <p>Control over what?</p>
             <aside class="notes" data-markdown>
               Two sides
-              
+
                 * inversion of execution control, command line vs ui programming
-                * control over dependencies instatnization is inverted - they are looked up rather than created
+                * control over dependencies instanization is inverted
+                * service locator - dependencies lookup instead of creation
+                * dependency injection - they are given rather than created
                 * the part about dealing with collaborators is called dependency injection
             </aside>
           </section>
-          
+
           <section>
             <h2>Dependency Inversion</h2>
             <blockquote>
               Abstractions should not depend upon details. Details should depend upon abstractions
             </blockquote>
-            
+
             <aside class="notes" data-markdown>
               What those fancy words mean?
-              
+
                 * again, that you shouldn't create collaborators by hand
-                * staticlly typed languages, programing agains Interfaces
-                * due to Ruby duck typing, programing agains anything that is not a concrete class
+                * statically typed languages, programing against Interfaces
+                * due to Ruby duck typing, programing against anything that is not a concrete class
              </aside>
           </section>
         </section>
-        
+
         <section>
           <h3>Manual Dependency Injection</h3>
 <pre><code class="ruby">class Injector
   def ftp_job
     Job.new(FtpFileRetriever.new, FileCleaner.new)
   end
- 
+
   def http_job
     Job.new(HttpFileRetriever.new, FileCleaner.new)
   end
 end</code></pre>
           <aside class="notes" data-markdown>
             Better, but
-            
+
               * a lot of repetition
               * gets more painful, when classes have more dependencies
               * however, gives the benefits of DI
@@ -177,7 +179,7 @@ end</code></pre>
   def ftp_job
     inject(Job, file_retriver: FtpFileRetriever.new)
   end
- 
+
   def http_job
     inject(Job, file_retriver: HttpFileRetriever.new)
   end
@@ -185,13 +187,13 @@ end</code></pre>
           <aside class="notes" data-markdown>
             Automated
 
-              * automated manul depdency injection 
-              * convention over configuration              
+              * automated manual dependency injection
+              * convention over configuration
               * only the difference needs to be specified
               * dependencies are read from constructor signature
            </aside>
         </section>
-        
+
         <section>
         <h3>Takes</h3>
 <pre><code class="ruby">class Job
@@ -209,10 +211,10 @@ end</code></pre>
           <aside class="notes" data-markdown>
             A little lengthy constructor
 
-              * the constructor signature defined dependencies            
-              * still, the body and attr_readerers needs to be defined
+              * the constructor signature defined dependencies
+              * still, the body and attr_readers needs to be defined
               * there is a lot of ceremony in that
-              * I dont like writing boilerplate, I'm not a java programmer in the end ;)
+              * I don't like writing boilerplate, I'm not a java programmer in the end ;)
               * takes to the rescue, does the same that code above
            </aside>
         </section>
@@ -224,16 +226,36 @@ end</code></pre>
             <li class="fragment">convention over configuration</li>
             <li class="fragment">constructor based injection</li>
             <li class="fragment">tried and tested</li>
-          </ul>            
-          
+          </ul>
+
           <aside class="notes" data-markdown>
             Previous slides shown how dependor works, a quick recap
-            
+
               * it is dependency injection, not a service locator
               * convention over configuration removes a lot of boilerplate, there are no XML files
               * constructor based injection ensures, that only valid objects are creates
-              * constructor based injection, clearly shows all the dependencis of an object
+              * constructor based injection, clearly shows all the dependencies of an object
               * it was used in ruby, rails and sinatra projects
+          </aside>
+        </section>
+
+        <section>
+          <h3>Per environment injection</h3>
+          <pre><code class="ruby">#development.rb, test.rb
+FileUploader = LocalFileUploader.new
+
+Rails::Application.configure do
+end</code></pre>
+
+<pre><code class="ruby">#production.rb
+FileUploader = S3FileUploader.new
+
+Rails::Application.configure do
+end</code></pre>
+          <aside class="notes" data-markdown>
+            Pros
+
+              * if per env model fits, there is no need for big DI solution
           </aside>
         </section>
 
@@ -244,59 +266,59 @@ end</code></pre>
     BetPlacement.place!(current_user, bet_slip, channel)
   end
 end
- 
+
 class BetPlacement
   def self.place!(current_user, bet_slip, channel)
     bonus = BonusCalculator.calculate(current_user, bet_slip)
     BetsCreator.create!(current_user, bet_slip, channel, bonus)
   end
 end
- 
+
 class BetsCreator
   def self.place!(user, bet_slip, channel, bonus); end
 end</code></pre>
           <aside class="notes" data-markdown>
             First domain
-              
+
                * bookmaking platform
                * it is a place where I wish I used DI
-               
+
             Pros
-            
+
               * easy to follow
-            
+
             Cons
-            
+
               * coupling to order of arguments
               * services aware of unrelated arguments
           </aside>
         </section>
-        
+
         <section>
           <h3>Wishful thinking</h3>
           <pre><code class="ruby">class BetPlacement
   takes :bonus_calculator
-  
+
   def place!
     bonus = bonus_calculator.calculate
     bets_creator.create!(bonus)
   end
 end
- 
+
 class BetsCreator
   takes :current_user, :bet_slip, :channel
-  
+
   def place!(bonus); end
 end</code></pre>
           <aside class="notes" data-markdown>
             Pros
-            
+
               * concerned with only real dependencies
               * wishful thinking is a nice design technique, a top down approach
               * possible?
           </aside>
         </section>
-        
+
         <section>
           <h3>is not a fallacy</h3>
           <pre><code class="ruby">class BetsController < ApplicationController
@@ -304,22 +326,22 @@ end</code></pre>
     Injector.new(channel, params).bet_placement.place!
   end
 end
- 
+
 def Injector
   include Dependor::AutoInject
   takes :channel, :params
-  
+
   def bet_slip; end
   def current_user; end
 end</code></pre>
           <aside class="notes" data-markdown>
             Pros
-            
+
               * irrevalant arguments are not passed in
               * injector can be scoped to just ona action
           </aside>
         </section>
-        
+
         <section>
           <h3>Runner</h3>
           <pre><code class="ruby">class Runner
@@ -344,14 +366,14 @@ Injector.new(ARGV[0]).runner.run</code></pre>
 
                * we've rewritten data import processes
                * feature switches were used the keep the old code in place during transition
-               
+
             Pros
-            
+
               * code configuration is moved to injector
               * it is transparent to the domain code
           </aside>
         </section>
-        
+
         <section>
           <h3>Exception Notifier</h3>
           <pre><code class="ruby">class ExceptionNotifier; end
@@ -360,7 +382,7 @@ class FakeExceptioNotifier; end
 class Injector
   include Dependor::AutoInject
   takes :configuration
-  
+
   def exception_notifier
     configuration.exception_notifier || ExceptionNotifier
   end
@@ -371,63 +393,14 @@ EventImport.configure do |c|
 end</code></pre>
           <aside class="notes" data-markdown>
             Pros
-            
+
               * you can use external configuration to modify the graph without tuching the production code at all
               * especiall useful for debugging purposes and tests
-              
+
             Other approaches
-            
+
               * monkey patch - I avoid as much as I can
               * constant replacemnet - changes in whole process, injector only within a scope of one injection
-          </aside>
-        </section>
-        
-        <section>
-          <h3>Per environment injection</h3>
-          <pre><code class="ruby">#development.rb, test.rb
-FileUploader = LocalFileUploader.new
-
-Rails::Application.configure do
-end</code></pre>
-
-<pre><code class="ruby">#production.rb
-FileUploader = S3FileUploader.new
-
-Rails::Application.configure do
-end</code></pre>
-          <aside class="notes" data-markdown>
-            Pros
-            
-              * if per env model fits, there is no need for big DI solution
-          </aside>
-        </section>
-        
-        <section>
-          <h3>Per server injection</h3>
-<pre><code class="ruby">class Injector
-  include Dependor::AutoInject
-  
-  def press_downloader
-    if Environment.live?
-      SFTPDownloader.new(#SFTP configuration)
-    elsif Environment.local?
-      LocalDownloader.new(#local path)
-    elsif Environment.primary_staging?
-      # ...
-    elsif Environment.seconary_staging?
-      # ...
-    else
-      raise UnsupportedEnvironemnt
-    end
-  end
-end</code></pre>
-
-          <aside class="notes" data-markdown>
-            Pros
-            
-              * infrastructure specific logic can be placed in injector or external class
-              * both can be easily tested
-              * domain code doesn't care about the server configuration specifics
           </aside>
         </section>
 
@@ -436,22 +409,22 @@ end</code></pre>
 <pre><code class="ruby">post "/orders" do |order_creator|
   order_creator.create
 end
- 
+
 class OrderCreator
   takes :current_user, :params, :order_db
-  
+
   def create
     current_user.orders << order_db.new(params[:order])
   end
 end</code></pre>
           <aside class="notes" data-markdown>
             Sinatra integration
-            
+
               * nice syntax, seamless integration
               * it was used in to simple project, it was just an overhead
           </aside>
         </section>
-        
+
         <section>
           <h2>Some thoughts</h2>
           <ul>
@@ -459,10 +432,10 @@ end</code></pre>
             <li class="fragment">when components need to be replaced</li>
             <li class="fragment">works nicely for ruby apps</li>
             <li class="fragment">think about entry points</li>
-          </ul>   
+          </ul>
           <aside class="notes" data-markdown>
             Pros
-            
+
               * collaborators, object graphs
               * when components need to be replaced
               * works well for ruby apps, gems
@@ -473,14 +446,17 @@ end</code></pre>
               * Ruby tight coupling is not as tigh as in Java/C#
           </aside>
         </section>
-                
+
         <section>
           <h2>It is not about testing</h2>
           <aside class="notes" data-markdown>
             Testing
-            
-              * This is a talk about dependency injection, so I'm obliged by the law to mention testing. It is super easy to test code written with DI in mind in isolation. 
+
+              * This is a talk about dependency injection, so I'm obliged by the law to mention testing. It is super easy to test code written with DI in mind in isolation.
               * However in Ruby it is easy to stub on anything, so this point is not so valid in our language.I would still say that tests without stubbing on new nor constants are more readable and easier to maintain.
+            Cons of coupling
+
+              * when stubbing on constants, you can forgot to stub and integrate by accident
           </aside>
         </section>
 
@@ -488,13 +464,13 @@ end</code></pre>
           <h2>A bunch of links</h2>
           <ul>
             <li><a href="https://github.com/psyho/dependor">Dependor source code</a></li>
-            <li><a href="https://github.com/psyho/dependor-sinatra">Sinatra intrgration</a></li>
+            <li><a href="https://github.com/psyho/dependor-sinatra">Sinatra integration</a></li>
             <li><a href="http://twitter.com/zwrozka">@zwrozka</a></li>
           </ul>
-          
+
           <aside class="notes" data-markdown>
             Almost done
-            
+
               * give it a try
               * I would love to help, if anyone has problems with the library or their domain
               * new ideas are welcome
@@ -505,7 +481,7 @@ end</code></pre>
         <section>
           <h1>THE END</h1>
           <h3>BY Pawel Pierzchala</h3>
-          
+
           <aside class="notes" data-markdown>
             Thank you. Any questions?
           </aside>
